@@ -14,8 +14,8 @@ int main() {
         break;
         }
         if (strncmp(input,"echo ",8) ==0){
-        printf ("%s\n", input + 8);
-        continue;
+          printf ("%s\n", input + 8);
+          continue;
         }        
         printf("%s: command not found\n", input);
     }
