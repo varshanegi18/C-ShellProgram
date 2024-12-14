@@ -3,7 +3,7 @@
 
 int main() {
     char input[100];
-
+    char i;
     while (1) {
         printf("$ ");
         fflush(stdout);
@@ -12,6 +12,10 @@ int main() {
         input[strlen(input) - 1] = '\0'; // Remove newline character
         if(strcmp(input,"exit 0") ==0){
         break;
+        }
+        if (strncmp(input,"type ", strlen("type")) ==0){
+          printf("%s is a built in command\n", input+5);
+          continue;
         }
         if (strncmp(input, "echo ", strlen("echo")) == 0){
             printf ("%s\n",  input + 5);
