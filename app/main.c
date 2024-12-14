@@ -3,8 +3,7 @@
 
 int main() {
     char input[100];
-    char i [100];
-
+    
     while (1) {
         printf("$ ");
         fflush(stdout);
@@ -14,8 +13,8 @@ int main() {
         if(strcmp(input,"exit 0") ==0){
         break;
         }
-        if (strcmp(input,"echo "i) ==0){
-        printf ("%s \n", i);
+        if (strncmp(input,"echo ",8) ==0){
+        printf ("%s\n", input + 8);
         continue;
         }        
         printf("%s: command not found\n", input);
