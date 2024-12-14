@@ -14,7 +14,7 @@ int main() {
         break;
         }
         if (strncmp(input,"type ", strlen("type")) ==0){
-          printf("%s is a built in command\n", input+5);
+          printf("%s is a shell builtin\n", input+5);
           continue;
         }
         if (strncmp(input, "echo ", strlen("echo")) == 0){
