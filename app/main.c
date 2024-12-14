@@ -3,7 +3,7 @@
 
 int main() {
     char input[100];
-    
+
     while (1) {
         printf("$ ");
         fflush(stdout);
@@ -13,13 +13,11 @@ int main() {
         if(strcmp(input,"exit 0") ==0){
         break;
         }
-        if (strncmp(input, "echo ", 6) ==0){
-          printf ("%s\n", input + 6);
-          continue;
+        if (strncmp(input, "echo ", strlen("echo")) == 0){
+            printf ("%s \n",  input + 5);
+            continue;
         }  
-        else{
-          printf("%s: command not found\n", input);
-          }
+        printf("%s: command not found\n", input);
     }
 
     return 0;
