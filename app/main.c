@@ -13,8 +13,8 @@ int main() {
         if(strcmp(input,"exit 0") ==0){
         break;
         }
-        if (strncmp(input,"echo ",8) ==0){
-          printf ("%s\n", input+8);
+        if (strncmp(input, "echo ", 6) ==0){
+          printf ("%s\n", input + 6);
           continue;
         }  
         else{
