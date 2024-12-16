@@ -73,7 +73,7 @@ int main() {
 int main() {
     char input[100];
     // List of built-in commands
-    char *builtin[] = {"echo", "cat", "exit", "type"};
+    char *builtin[] = {"echo", "alias","break","bind","break","caller","case", "exit", "type"};
     
     while (1) {
         printf("$ ");
