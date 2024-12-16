@@ -65,6 +65,7 @@ int main() {
 
     return 0;
 }*/
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -73,7 +74,7 @@ int main() {
 int main() {
     char input[100];
     // List of built-in commands
-    char *builtin[] = {"echo", "alias","break","bind","break","caller","case", "exit", "type"};
+    char *builtin[] = {"echo", "exit", "type"};
     
     while (1) {
         printf("$ ");
@@ -85,6 +86,10 @@ int main() {
         // Handle 'type' command separately
         if (strncmp(input, "type ", 5) == 0) {
             char *command = input + 5; // Get the command after 'type '
+            if (command[0] == '\0') {
+                printf("type: missing operand\n");
+                continue; // Skip further processing
+            }
             int found_builtin = 0;
             
             // Check if the command is a shell builtin
@@ -101,8 +106,12 @@ int main() {
                 // Get the PATH environment variable
                 char *path_env = getenv("PATH");
                 if (path_env) {
-                    // Split PATH into directories
-                    char *path = strtok(path_env, ":");
+                    // Copy PATH to avoid modifying the original
+                    char path_copy[200];
+                    strncpy(path_copy, path_env, sizeof(path_copy));
+                    path_copy[sizeof(path_copy) - 1] = '\0'; // Ensure null termination
+
+                    char *path = strtok(path_copy, ":");
                     while (path != NULL) {
                         // Create the full path for the command
                         char full_path[200];
@@ -127,10 +136,12 @@ int main() {
             continue; // Skip further processing for 'type' command
         }
 
-        
-        // Handle unrecognized commands like 'echo'
+        // Handle 'echo' command
         if (strncmp(input, "echo ", strlen("echo")) == 0) {
-            printf("%s\n", input + 5); // Print the argument after 'echo'
+            // Skip any leading spaces after 'echo '
+            char *arg = input + 5;
+            while (*arg == ' ') arg++;  // Skip leading spaces
+            printf("%s\n", arg); // Print the argument after 'echo'
             continue;
         }
 
@@ -140,8 +151,9 @@ int main() {
         }
 
         // If command is not recognized, print not found
-        printf("%s: command not found\n", input);
+        printf("%s: command not found\n", strtok(input, "\n"));
     }
 
     return 0;
 }
+
