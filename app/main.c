@@ -4,6 +4,7 @@
 #include <unistd.h>  // For access() function to check if file is executable
 #include <sys/types.h>
 #include <sys/wait.h>  // For waitpid()
+#include <sys/stat.h>  // for stat() function
 #define BUFFER_SIZE 1024  // Define a buffer size
 
 int main() {
@@ -11,7 +12,7 @@ int main() {
     char cwd[BUFFER_SIZE];  // Statically allocate a buffer to store the current working directory
     
     // List of built-in commands
-    char *builtin[] = {"echo", "exit", "type","pwd"};
+    char *builtin[] = {"echo", "exit", "type","pwd","cd"};
     
     while (1) {
         printf("$ ");
@@ -81,7 +82,7 @@ int main() {
             printf("%s\n", arg); // Print the argument after 'echo'
             continue;
         }
-        // Get the current working directory
+        // Handle 'pwd' command
         if (strncmp(input, "pwd", strlen("pwd")) == 0)
             if (getcwd(cwd, sizeof(cwd)) != NULL) {
                 printf("%s\n", cwd);  // Print the current working directory
@@ -90,7 +91,30 @@ int main() {
             /*else {
                 perror("getcwd");  // If getcwd fails, print an error message
           } */
+        // Handle 'cd' command (absolute paths)
+        if (strncmp(input, "cd ", strlen("cd ")) == 0) {
+            char *path = input + 3;  // Skip "cd " and get the path
 
+            // Check if the path is an absolute path (starts with '/')
+            if (path[0] == '/') {
+                struct stat path_stat;
+
+                // Check if the path exists and is a directory
+                if (stat(path, &path_stat) == 0 && S_ISDIR(path_stat.st_mode)) {
+                    // Change the directory using chdir()
+                    if (chdir(path) != 0) {
+                        perror("cd");
+                    }
+                } else {
+                    // Print error message if directory doesn't exist
+                    fprintf(stderr, "cd: %s: No such file or directory\n", path);
+                }
+            } else {
+                // If it's not an absolute path, print error (handled in later stages)
+                fprintf(stderr, "cd: %s: Not an absolute path\n", path);
+            }
+            continue; // Skip further processing for 'cd' command
+        }
         // Exit command
         if (strcmp(input, "exit") == 0) {
             break;
