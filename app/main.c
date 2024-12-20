@@ -98,54 +98,92 @@ int main() {
                 continue;
             }
 
-            // Handle absolute path (starts with '/')
-            if (path[0] == '/') {
-                struct stat path_stat;
-                // Check if the path exists and is a directory
-                if (stat(path, &path_stat) == 0 && S_ISDIR(path_stat.st_mode)) {
-                    // Change the directory using chdir()
-                    if (chdir(path) != 0) {
-                        perror("cd");
-                    }
-                } else {
-                    // Print error message if directory doesn't exist
-                    fprintf(stderr, "cd: %s: No such file or directory\n", path);
+            // Handle '~' as home directory
+            if (path[0] == '~') {
+                // Check if path starts with '~', replace it with HOME env variable
+                const char *home_dir = getenv("HOME");
+                if (home_dir == NULL) {
+                    fprintf(stderr, "cd: HOME environment variable is not set\n");
+                    continue;
                 }
-            } else { 
-                // Handle relative path
-                if (getcwd(cwd, sizeof(cwd)) != NULL) {
-                    // Dynamically calculate the required buffer size for the concatenated path
-                    size_t full_path_len = strlen(cwd) + strlen(path) + 2; // +2 for '/' and '\0'
-                    if (full_path_len > sizeof(cwd)) {
-                        fprintf(stderr, "cd: path is too long\n");
-                        continue;
-                    }
 
-                    // Allocate memory for full_path dynamically based on the required size
-                    char *full_path = (char *)malloc(full_path_len);
+                // Skip the '~' character and append the rest of the path if there is more
+                if (path[1] != '\0') {
+                    char *full_path = (char *)malloc(strlen(home_dir) + strlen(path));
                     if (full_path == NULL) {
                         fprintf(stderr, "cd: memory allocation failed\n");
                         continue;
                     }
 
-                    snprintf(full_path, full_path_len, "%s/%s", cwd, path);  // Combine current dir with the relative path
+                    snprintf(full_path, strlen(home_dir) + strlen(path), "%s%s", home_dir, path + 1);
 
                     struct stat path_stat;
-                    // Check if the relative path exists and is a directory
+                    // Check if the directory exists and is a directory
                     if (stat(full_path, &path_stat) == 0 && S_ISDIR(path_stat.st_mode)) {
-                        // Change the directory using chdir()
                         if (chdir(full_path) != 0) {
                             perror("cd");
                         }
                     } else {
-                        // Print error message if directory doesn't exist
                         fprintf(stderr, "cd: %s: No such file or directory\n", full_path);
                     }
 
-                    // Free the dynamically allocated memory
                     free(full_path);
                 } else {
-                    perror("getcwd");
+                    // If '~' is alone, change to home directory
+                    if (chdir(home_dir) != 0) {
+                        perror("cd");
+                    }
+                }
+            } else {
+                // Handle absolute path (starts with '/')
+                if (path[0] == '/') {
+                    struct stat path_stat;
+                    // Check if the path exists and is a directory
+                    if (stat(path, &path_stat) == 0 && S_ISDIR(path_stat.st_mode)) {
+                        // Change the directory using chdir()
+                        if (chdir(path) != 0) {
+                            perror("cd");
+                        }
+                    } else {
+                        // Print error message if directory doesn't exist
+                        fprintf(stderr, "cd: %s: No such file or directory\n", path);
+                    }
+                } else { 
+                    // Handle relative path
+                    if (getcwd(cwd, sizeof(cwd)) != NULL) {
+                        // Dynamically calculate the required buffer size for the concatenated path
+                        size_t full_path_len = strlen(cwd) + strlen(path) + 2; // +2 for '/' and '\0'
+                        if (full_path_len > sizeof(cwd)) {
+                            fprintf(stderr, "cd: path is too long\n");
+                            continue;
+                        }
+
+                        // Allocate memory for full_path dynamically based on the required size
+                        char *full_path = (char *)malloc(full_path_len);
+                        if (full_path == NULL) {
+                            fprintf(stderr, "cd: memory allocation failed\n");
+                            continue;
+                        }
+
+                        snprintf(full_path, full_path_len, "%s/%s", cwd, path);  // Combine current dir with the relative path
+
+                        struct stat path_stat;
+                        // Check if the relative path exists and is a directory
+                        if (stat(full_path, &path_stat) == 0 && S_ISDIR(path_stat.st_mode)) {
+                            // Change the directory using chdir()
+                            if (chdir(full_path) != 0) {
+                                perror("cd");
+                            }
+                        } else {
+                            // Print error message if directory doesn't exist
+                            fprintf(stderr, "cd: %s: No such file or directory\n", full_path);
+                        }
+
+                        // Free the dynamically allocated memory
+                        free(full_path);
+                    } else {
+                        perror("getcwd");
+                    }
                 }
             }
             continue; // Skip further processing for 'cd' command
