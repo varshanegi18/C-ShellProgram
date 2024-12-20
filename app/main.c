@@ -5,7 +5,55 @@
 #include <sys/types.h>
 #include <sys/wait.h>  // For waitpid()
 #include <sys/stat.h>  // for stat() function
+
 #define BUFFER_SIZE 1024  // Define a buffer size
+
+// Function to parse input with single quotes
+void parse_input(char *input, char *args[]) {
+    char *token;
+    int i = 0;
+    int len = strlen(input);
+    int in_single_quote = 0;
+    char temp[BUFFER_SIZE];
+    int temp_index = 0;
+
+    // Iterate through the input
+    for (int j = 0; j < len; j++) {
+        if (input[j] == '\'' && !in_single_quote) {
+            // Start of a quoted string
+            in_single_quote = 1;
+            continue; // Skip the opening quote
+        } else if (input[j] == '\'' && in_single_quote) {
+            // End of a quoted string
+            in_single_quote = 0;
+            temp[temp_index] = '\0';
+            args[i++] = strdup(temp); // Add quoted string as an argument
+            temp_index = 0;
+            continue; // Skip the closing quote
+        } else if (in_single_quote) {
+            // Collect characters inside quotes
+            temp[temp_index++] = input[j];
+        } else if (input[j] == ' ' || input[j] == '\t') {
+            // Handle space or tab outside quotes (end of argument)
+            if (temp_index > 0) {
+                temp[temp_index] = '\0';
+                args[i++] = strdup(temp);
+                temp_index = 0;
+            }
+        } else {
+            // Collect normal characters outside quotes
+            temp[temp_index++] = input[j];
+        }
+    }
+
+    // Add the last argument if any
+    if (temp_index > 0) {
+        temp[temp_index] = '\0';
+        args[i++] = strdup(temp);
+    }
+
+    args[i] = NULL;  // Null-terminate the arguments array
+}
 
 int main() {
     char input[200];  // Increased size to handle longer commands
@@ -76,18 +124,29 @@ int main() {
 
         // Handle 'echo' command
         if (strncmp(input, "echo ", strlen("echo")) == 0) {
-            // Skip any leading spaces after 'echo '
-            char *arg = input + 5;
-            while (*arg == ' ') arg++;  // Skip leading spaces
-            printf("%s\n", arg); // Print the argument after 'echo'
+            // Tokenize the input and handle single quotes
+            char *args[100];
+            parse_input(input + 5, args);  // Skip 'echo ' and parse the rest
+
+            // Echo each argument (printed as they are, including spaces within quotes)
+            for (int i = 0; args[i] != NULL; i++) {
+                printf("%s", args[i]);
+                if (args[i + 1] != NULL) {
+                    printf(" ");
+                }
+            }
+            printf("\n");
             continue;
         }
+
         // Handle 'pwd' command
-        if (strncmp(input, "pwd", strlen("pwd")) == 0)
+        if (strncmp(input, "pwd", strlen("pwd")) == 0) {
             if (getcwd(cwd, sizeof(cwd)) != NULL) {
                 printf("%s\n", cwd);  // Print the current working directory
                 continue;
-            } 
+            }
+        }
+
         // Handle 'cd' command (both absolute and relative paths)
         if (strncmp(input, "cd ", strlen("cd ")) == 0) {
             char *path = input + 3;  // Skip "cd " and get the path
@@ -188,6 +247,7 @@ int main() {
             }
             continue; // Skip further processing for 'cd' command
         }
+
         // Exit command
         if (strcmp(input, "exit") == 0) {
             break;
@@ -195,13 +255,7 @@ int main() {
 
         // Tokenize input into command and arguments
         char *args[100];
-        int i = 0;
-        char *token = strtok(input, " ");
-        while (token != NULL) {
-            args[i++] = token;
-            token = strtok(NULL, " ");
-        }
-        args[i] = NULL; // Null-terminate the arguments array
+        parse_input(input, args);  // Parse input with handling for single quotes
 
         // If command is empty, prompt again
         if (args[0] == NULL) {
@@ -218,13 +272,11 @@ int main() {
         }
 
         if (is_builtin) {
-            // For now, we just handle the built-in commands directly
+            // Handle built-in commands like exit, echo, etc.
             if (strcmp(args[0], "exit") == 0) {
                 break;
             } else if (strcmp(args[0], "echo") == 0) {
                 printf("%s\n", args[1]);  // Simple echo
-            } else if (strcmp(args[0], "type") == 0) {
-                // The 'type' command is already handled above, so skip here
             }
         } else {
             // Run the external command
