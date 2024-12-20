@@ -12,7 +12,7 @@ int main() {
     char cwd[BUFFER_SIZE];  // Statically allocate a buffer to store the current working directory
     
     // List of built-in commands
-    char *builtin[] = {"echo", "exit", "type","pwd","cd"};
+    char *builtin[] = {"echo", "exit", "type", "pwd", "cd"};
     
     while (1) {
         printf("$ ");
@@ -88,17 +88,19 @@ int main() {
                 printf("%s\n", cwd);  // Print the current working directory
                 continue;
             } 
-            /*else {
-                perror("getcwd");  // If getcwd fails, print an error message
-          } */
-        // Handle 'cd' command (absolute paths)
+        // Handle 'cd' command (both absolute and relative paths)
         if (strncmp(input, "cd ", strlen("cd ")) == 0) {
             char *path = input + 3;  // Skip "cd " and get the path
 
-            // Check if the path is an absolute path (starts with '/')
+            // Handle the case of empty or no path
+            if (path[0] == '\0') {
+                fprintf(stderr, "cd: missing operand\n");
+                continue;
+            }
+
+            // Handle absolute path (starts with '/')
             if (path[0] == '/') {
                 struct stat path_stat;
-
                 // Check if the path exists and is a directory
                 if (stat(path, &path_stat) == 0 && S_ISDIR(path_stat.st_mode)) {
                     // Change the directory using chdir()
@@ -109,9 +111,42 @@ int main() {
                     // Print error message if directory doesn't exist
                     fprintf(stderr, "cd: %s: No such file or directory\n", path);
                 }
-            } else {
-                // If it's not an absolute path, print error (handled in later stages)
-                fprintf(stderr, "cd: %s: Not an absolute path\n", path);
+            } else { 
+                // Handle relative path
+                if (getcwd(cwd, sizeof(cwd)) != NULL) {
+                    // Dynamically calculate the required buffer size for the concatenated path
+                    size_t full_path_len = strlen(cwd) + strlen(path) + 2; // +2 for '/' and '\0'
+                    if (full_path_len > sizeof(cwd)) {
+                        fprintf(stderr, "cd: path is too long\n");
+                        continue;
+                    }
+
+                    // Allocate memory for full_path dynamically based on the required size
+                    char *full_path = (char *)malloc(full_path_len);
+                    if (full_path == NULL) {
+                        fprintf(stderr, "cd: memory allocation failed\n");
+                        continue;
+                    }
+
+                    snprintf(full_path, full_path_len, "%s/%s", cwd, path);  // Combine current dir with the relative path
+
+                    struct stat path_stat;
+                    // Check if the relative path exists and is a directory
+                    if (stat(full_path, &path_stat) == 0 && S_ISDIR(path_stat.st_mode)) {
+                        // Change the directory using chdir()
+                        if (chdir(full_path) != 0) {
+                            perror("cd");
+                        }
+                    } else {
+                        // Print error message if directory doesn't exist
+                        fprintf(stderr, "cd: %s: No such file or directory\n", full_path);
+                    }
+
+                    // Free the dynamically allocated memory
+                    free(full_path);
+                } else {
+                    perror("getcwd");
+                }
             }
             continue; // Skip further processing for 'cd' command
         }
@@ -190,4 +225,3 @@ int main() {
     return 0;
 }
 
-      
