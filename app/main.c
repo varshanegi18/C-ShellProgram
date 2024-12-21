@@ -534,7 +534,7 @@ int main() {
         }
 
         // Exit command
-        if (strcmp(input, "exit") == 0) {
+        if (strcmp(input, "exit 0") == 0) {
             break;
         }
 
